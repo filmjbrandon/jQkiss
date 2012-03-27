@@ -15,19 +15,41 @@ var jQkiss = {
     var controllers = config.controllers;
     if ( typeof(controllers) !== 'object' ){ return; }
 
+    var base = {}; // create a container for the classes
     for (name in controllers)
     {
-      var base = {}; // create a container for the classes
       (function( _classname, _controllers ) {
-        base[name] = function(options){
+        base[_classname] = function(options){
+
+          // no need to use "new" to instantiate
+          if (!(this instanceof arguments.callee)) {
+            return new base[_classname](options);
+          }
+
+          // Private
           var _is_init = false;
           var _uniq_class = false;
           var _init_options = {};
+          var $self = this; // Due to closures we can use this to refer to "this" instance in any method below
 
-          var $self = this;
+          // Private Methods
+          var _initBindings = function(bindings){
+            if (!bindings) { return; }
+            var delegate_element = $self.element || $(document); // falls back to global bindings
+            delegate_element.ready(function(){
+              delegate_element.undelegate(); // prevent rebinding
+              $.each(bindings,function(idx,obj){
+                $.each(obj,function(selector,actions) {
+                  $.each(actions,function(event,action) {
+                    var func = (typeof(action) == 'function') ? action : function(){ $self['handlers'][action].apply($self, arguments); }
+                    delegate_element.delegate(selector,event,func);
+                  });
+                })
+              });
+            });
+          };
 
-          // Public Methods
-
+          // Public Methods (uses jQuery $.extend instead of prototype)
           $.extend( $self,{
             // convenience method to list the bindings associated with the element.
             getBound : function() {
@@ -35,32 +57,15 @@ var jQkiss = {
             },
             // selects the base element that's used to scope bindings
             getElement : function() {
-              return $self.element = $($self.element.selector);
+              return $self.element; //= $($self.element.selector);
             },
             // resets bindings
             rebind : function() {
-              $self.element = $($self.element.selector);
+//              $self.element = $($self.element.selector);
               _initBindings($self.bindings);
             }
           });
 
-          // Private Methods
-
-          var _initBindings = function(bindings){
-            $($self.element.selector).ready(function(){
-              var delegate_element = $self.getElement() || $(document);
-              delegate_element.undelegate(); // prevent rebinding
-              $.each(bindings,function(idx,obj){
-                $.each(obj,function(selector,actions) {
-                  $.each(actions,function(event,action) {
-                    var func = (typeof(action) == 'function') ? action : $self['handlers'][action];
-                    console.log("here",func,delegate_element,selector);
-                      delegate_element.delegate(selector,event,func);
-                  });
-                })
-              });
-            });
-          };
 
           // the initialization meat
           (function(options)
@@ -71,15 +76,18 @@ var jQkiss = {
 
             // merges all properties/methods of the controller into the current object without prototype
             $.extend( $self, _controllers[_classname] );
-            // Handles all constructor initialization, and via closure creates reference to the main object
+
+            // Handles constructor initialization, and via closure creates reference to the main object
             (function(options){
-                $this = $self; // makes a class level reference to itself available anywhere within object
+              // this makes a global var, we need it to be a class var
                 if (typeof($self.__constructor) !== 'undefined' ) {
                   $self.__constructor(options);
                 }
+                if ($self.bindings){
+                  _initBindings($self.bindings);
+                }
             })(_init_options);
             // setup bindings
-            _initBindings($self.bindings);
             _is_init = true;
           })(options);
         };
