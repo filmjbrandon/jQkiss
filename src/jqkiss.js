@@ -1,10 +1,12 @@
 /**
- * jQkiss is a surprisingly simple and elegant solution for organizing your javascript code into objects
- * TODO: Add inheritance, mixins/plugins and separate out Ajax, Bindings, and other plugins
+ * jQkiss
+ * Object Oriented jQuery - surprisingly simple!
  *
- * @param object
- * @author Jim Kass
- * @version 0.1
+ * by Jim Kass (http://github.com/filmjbrandon)
+ * distributed under Creative Commons Attribution-ShareAlike License - http://creativecommons.org/licenses/by-sa/2.5/
+ *
+ * @todo: Add inheritance, mixins/plugins and separate out Ajax, Bindings, and other plugins
+ * @version 0.2
  */
 var jQkiss = {
   bootstrap : function(config) {
@@ -30,12 +32,12 @@ var jQkiss = {
           var _is_init = false;
           var _uniq_class = false;
           var _init_options = {};
-          var $self = this; // Due to closures we can use this to refer to "this" instance in any method below
+          var $self = this;
 
           // Private Methods
           var _initBindings = function(bindings){
             if (!bindings) { return; }
-            var delegate_element = $self.element || $(document); // falls back to global bindings
+            var delegate_element = $self.element.parent() || $(document); // falls back to global bindings
             delegate_element.ready(function(){
               delegate_element.undelegate(); // prevent rebinding
               $.each(bindings,function(idx,obj){
@@ -74,6 +76,10 @@ var jQkiss = {
             _init_options = options || {};
             $self.element = _init_options.element ? $(_init_options.element) : $('.' + _classname);
 
+            // wrap element with a uniqid
+            if ( $self.element.length ) {
+              $self.element.wrap('<div class="__jk" id="el-'+ new Date().getTime() + '"/>');
+            }
             // merges all properties/methods of the controller into the current object without prototype
             $.extend( $self, _controllers[_classname] );
 

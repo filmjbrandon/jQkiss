@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script src="../src/jqkiss.js"></script>
+<script src="./demo.js"></script>
+<script>
+// load up our controllers
+$(function(){
+  var foo, bar;
+  // Foo will look for a "Foo" class
+  $('#init-foo').click(function(){
+    $(this).remove();
+    foo = new jQDemo.Foo();
+  })
+  // or we can be explicit
+  $('#init-bar').click(function(){
+    $(this).remove();
+    bar = new jQDemo.Bar({element:$('div.Bar')})
+    // The bindings still work even if content is added after instantiation, e.g. Ajax loaded
+    bar.getElement().append('<button type="button" class="add">Click Me To Add</button>');
+    bar.getElement().append('<button type="submit" class="subtract">Click Me To Subtract</button>');
+  });
+
+
+})
+// once again, now that we've already instantiated the classes,
+// we can destroy the container and free memory if needed :)
+delete jQDemo;
+</script>
+<title>JQKiss Example</title>
+</head>
+<body>
+
+<div class="Foo">
+<button id="init-foo">Init Foo</button>
+    <span></span>
+</div>
+
+<div class="Bar">
+<button id="init-bar">Init Bar</button>
+    <span></span>
+</div>
+
+</body>
+</html>
