@@ -5,34 +5,84 @@
  * by Jim Kass (http://github.com/filmjbrandon)
  * distributed under Creative Commons Attribution-ShareAlike License - http://creativecommons.org/licenses/by-sa/2.5/
  *
- * @todo: Add inheritance, mixins/plugins and separate out Ajax, Bindings, and other plugins
- * @version 0.2
+ * @version 0.3
  */
-var jQkiss = {
-  bootstrap : function(config) {
+var jqkiss = {
+  bootstrap : function(config)
+  {
+    var jq = {
+      debug: function()
+      {
+        if ( config.debug && config.debug > 1 ) {
+          console.log("JQ DEBUG",arguments);
+        }
+      }
+    };
     // some sanity checks
     if (!config) {
       return;
     }
     var controllers = config.controllers;
     if ( typeof(controllers) !== 'object' ){ return; }
-
     var base = {}; // create a container for the classes
+
+    var mergeInherits = function(_classname,_controllers)
+    {
+      jq.debug(_classname,_controllers);
+      var inherits = _classname.split('::',2);
+      if (inherits.length > 1)
+      {
+        var _inheritee = _controllers[_classname];
+        var _inherited = _controllers[inherits[1]];
+        // replace classname
+        _classname = inherits[0];
+        _controllers[_classname] = $.extend( true, _inherited, _inheritee );
+      }
+      return {inherited:_inherited,base:_controllers[_classname],name:_classname};
+    };
+
+
+    // Compile Plugins
+    // Start with sys
+    $.each(jqkiss.ext.sys,function(key,val) {
+      var extended = mergeInherits(key,jqkiss.ext.sys);
+      jqkiss.ext.sys[extended.name] = extended.base;
+      jqkiss.ext.sys[extended.name]['$extend'] = jqkiss.ext.sys[extended.name]['$extend'] || {};
+      $.extend( jqkiss.ext.sys[extended.name]['$extend'], extended.inherited );
+    });
+
     for (name in controllers)
     {
       (function( _classname, _controllers ) {
+
+        // Inheritance
+        var extended = mergeInherits(_classname,_controllers);
+        jq.debug('extended',extended);
+        _classname = extended.name;
+        _controllers[_classname] = extended.base;
+        _controllers[_classname]["$parent"] = extended.inherited;
+
         base[_classname] = function(options){
+
+          jq.debug("controllers",_controllers)
 
           // no need to use "new" to instantiate
           if (!(this instanceof arguments.callee)) {
             return new base[_classname](options);
           }
 
+          jq.debug("preinit",_controllers[_classname]);
+
           // Private
           var _is_init = false;
           var _uniq_class = false;
           var _init_options = {};
           var $self = this;
+
+          if ( config.debug ) {
+            $self._is_debug = true;
+          }
+
 
           // Private Methods
           var _initBindings = function(bindings){
@@ -80,8 +130,26 @@ var jQkiss = {
             if ( $self.element.length ) {
               $self.element.wrap('<div class="__jk" id="el-'+ new Date().getTime() + '"/>');
             }
+            // merges in mixins/extensions
+            $.each(_controllers[_classname]['$extend'], function(i,mixin){
+              // TODO: find a way to NOT use eval here!
+              if (typeof mixin === 'function') {
+                jq.debug(_controllers[_classname]['$extend'],i,mixin);
+                $.extend( true, _controllers[_classname], _controllers[_classname]['$extend'] );
+                delete _controllers[_classname]['$extend'];
+              }
+              else
+              {
+                var obj = eval('jqkiss.ext.' + mixin);
+                $.extend( true, _controllers[_classname], obj );
+              }
+            });
+
+            jq.debug("pre-merge",_controllers[_classname]);
             // merges all properties/methods of the controller into the current object without prototype
             $.extend( $self, _controllers[_classname] );
+            jq.debug("post-merge",_controllers[_classname]);
+
 
             // Handles constructor initialization, and via closure creates reference to the main object
             (function(options){
@@ -104,3 +172,48 @@ var jQkiss = {
     return base; // we return an object with a set of "assembled" classes.
   }
 };
+
+jqkiss.ext = {};
+jqkiss.ext.sys = {
+    'Base': {
+      getData: function(){
+        return this.$_data;
+      },
+      setData: function(data){
+        this.$_data = data;
+      },
+      setUrl: function(url){
+        this.$_url = url;
+      },
+      getUrl: function() {
+        return this.$_url;
+      },
+      debug: function() {
+        if (this._is_debug)
+        {
+          console.log('USER DEBUG',arguments);
+          delete this._is_debug;
+        }
+      }
+    },
+    'Ajax::Base' : {
+      // TODO: make private vars
+      request: function(options) {
+        var $_ajax_defaults = {
+          url: this.getUrl(),
+          data:this.getData()
+        };
+        var options = $.extend(
+          $_ajax_defaults,
+          options
+        );
+        $.ajax(options);
+      },
+      get: function(options) {
+        this.request($.extend({type:'GET'},options));
+      },
+      post: function(options) {
+        this.request($.extend({type:'POST'},options));
+      }
+    }
+}

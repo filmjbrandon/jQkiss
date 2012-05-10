@@ -3,7 +3,7 @@
  */
 
 var DemoControllers = {
-    Foo: {
+    "Foo": {
       // set some properties
        msg : "Instantiated Foo!",
 
@@ -11,6 +11,7 @@ var DemoControllers = {
        // bindings or other initializations...
         __constructor: function(options) {
             this.setMessage();
+            this.debug(this);
         },
         // Add methods
         setMessage: function() {
@@ -21,7 +22,8 @@ var DemoControllers = {
         }
     },
 
-    Bar: {
+    "Bar::Foo": {
+      $extend: ['sys.Ajax'],
       counter: 0,
       // Set bindings scoped to "this.getElement()";
       bindings: [
@@ -36,17 +38,27 @@ var DemoControllers = {
               this.counter++;
               // call out to a non-handler method
               this.setCounter(this.counter);
+              this.get();
           },
           subtractFromCounter: function(event){
               event.preventDefault();
               $(event.target).css('color','red');
               this.element.find('span').text(--this.counter);
+              this.setData({foo:"bar"});
+              this.post();
           }
+      },
+      get: function(){
+        this.debug("calling overridden")
+        // overrides get
+        options = {prop:'value'};
+        return this.$extend(options); // calls the parent method
       },
       // handlers only accept the event param, so we add
       // methods that can accept params outside of
       // the handlers array.
       setCounter: function(counter){
+        this.debug('setting',counter,this.element);
           this.element.find('span').text(counter);
       }
     }
@@ -55,7 +67,4 @@ var DemoControllers = {
 
 
 // Now we want to convert these to instantiable JS classes
-var jQDemo = jQkiss.bootstrap( { controllers : DemoControllers } );
-
-// remove so it's not browsable - security first :)
-delete DemoControllers;
+var jQDemo = jqkiss.bootstrap( { debug: 2, controllers : DemoControllers } );
