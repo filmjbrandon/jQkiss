@@ -131,20 +131,21 @@ var jqkiss = {
               $self.element.wrap('<div class="__jk" id="el-'+ new Date().getTime() + '"/>');
             }
             // merges in mixins/extensions
-            $.each(_controllers[_classname]['$extend'], function(i,mixin){
-              // TODO: find a way to NOT use eval here!
-              if (typeof mixin === 'function') {
-                jq.debug(_controllers[_classname]['$extend'],i,mixin);
-                $.extend( true, _controllers[_classname], _controllers[_classname]['$extend'] );
-                delete _controllers[_classname]['$extend'];
-              }
-              else
-              {
-                var obj = eval('jqkiss.ext.' + mixin);
-                $.extend( true, _controllers[_classname], obj );
-              }
-            });
-
+            if ( _controllers[_classname]['$extend'] ) {
+              $.each(_controllers[_classname]['$extend'], function(i,mixin){
+                // TODO: find a way to NOT use eval here!
+                if (typeof mixin === 'function') {
+                  jq.debug(_controllers[_classname]['$extend'],i,mixin);
+                  $.extend( true, _controllers[_classname], _controllers[_classname]['$extend'] );
+                  delete _controllers[_classname]['$extend'];
+                }
+                else
+                {
+                  var obj = eval('jqkiss.ext.' + mixin);
+                  $.extend( true, _controllers[_classname], obj );
+                }
+              });
+            }
             jq.debug("pre-merge",_controllers[_classname]);
             // merges all properties/methods of the controller into the current object without prototype
             $.extend( $self, _controllers[_classname] );
