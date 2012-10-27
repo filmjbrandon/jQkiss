@@ -126,10 +126,6 @@ var jqkiss = {
             _init_options = options || {};
             $self.element = _init_options.element ? $(_init_options.element) : $('.' + _classname);
 
-            // wrap element with a uniqid
-            if ( $self.element.length ) {
-              $self.element.wrap('<div class="__jk" id="el-'+ new Date().getTime() + '"/>');
-            }
             // merges in mixins/extensions
             if ( _controllers[_classname]['$extend'] ) {
               $.each(_controllers[_classname]['$extend'], function(i,mixin){
